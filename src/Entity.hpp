@@ -3,6 +3,8 @@
 #include <iostream>
 #include <string>
 
+#include "utils/debug.hpp"
+
 class Entity {
 public:
     explicit Entity(std::size_t id, const std::string &name = "unknown"):
@@ -14,26 +16,19 @@ public:
     {
     }
 
+    bool operator==(const Entity &other) const { return id == other.id; }
+
     operator std::size_t() const { return id; }
-
-    operator std::string() const
+    [[nodiscard]]
+    std::size_t getId() const
     {
-#ifdef DEBUG
-        return name;
-#else
-        return "unknown";
-#endif
+        return id;
     }
 
-    friend std::ostream &operator<<(std::ostream &os, const Entity &entity)
-    {
 #ifdef DEBUG
-        os << "Entity(" << entity.id << ", " << entity.name << ")";
-#else
-        os << "Entity(" << entity.id << ")";
+    operator std::string() const { return name; }
+    DERIVE_DEBUG(Entity, id, name)
 #endif
-        return os;
-    }
 
 private:
     std::size_t id;
@@ -41,3 +36,13 @@ private:
     std::string name;
 #endif
 };
+
+namespace std {
+template<>
+struct hash<Entity> {
+    std::size_t operator()(const Entity &entity) const noexcept
+    {
+        return std::hash<std::size_t> {}(entity.getId());
+    }
+};
+}

@@ -1,4 +1,5 @@
 target("becs")
     set_kind("binary")
+    set_languages("cxx20")
     add_files("src/*.cpp")
-    -- add_defines("DEBUG")
+    add_defines("DEBUG")
