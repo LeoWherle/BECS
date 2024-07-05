@@ -59,6 +59,21 @@ erDiagram
     Assemblage-Components-Mapping }o--|| All-Components : "component"
 ```
 
+## Current Features
+
+- [x] Entity creation
+- [x] Component creation
+- [x] Component data creation
+- [x] Entity-Component mapping
+- [x] Component-Table creation
+- [x] Debugging
+- [] Optimized data storage
+- [] Assemblage creation
+- [] Multithreading
+- [] Networking
+
+![Bouncing balls simulation](.github/boucing-balls.mp4)
+
 ## Maybe later
 
 It could have some network system to better understand how to manage clients, within an ECS.
