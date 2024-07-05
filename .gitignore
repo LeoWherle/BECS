@@ -2,6 +2,8 @@
 # Build
 .xmake/
 build/
+compile_commands.json
+.cache/
 
 # Prerequisites
 *.d

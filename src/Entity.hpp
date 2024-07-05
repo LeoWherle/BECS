@@ -1,9 +1,10 @@
 #pragma once
 
-#include <iostream>
 #include <string>
 
+#ifdef DEBUG
 #include "utils/debug.hpp"
+#endif
 
 class Entity {
 public:
