@@ -2,12 +2,8 @@
 #pragma once
 
 #include "EntityManager.hpp"
-#include <algorithm>
-#include <any>
-#include <atomic>
 #include <cstddef>
 #include <memory>
-#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -18,65 +14,20 @@
 #include "ComponentTable.hpp"
 #include "Entity.hpp"
 #include "EntityManager.hpp"
-#include "utils/ThreadPool.hpp"
+#include "View.hpp"
 
 #ifdef DEBUG
 template<class C>
 // needs this function :
 // friend std::ostream &operator<<(std::ostream &os, const C &obj)
-concept Component = requires(C c) {
+concept ComponentType = requires(C c) {
     { std::cout << c };
 };
+#else
+template<class C>
+concept ComponentType = true;
 #endif
 
-// class containing a reference to N componentTables, and makes it easy to iterate over them
-template<typename... Components>
-class View {
-private:
-    std::tuple<ComponentTable<Components> &...> tables;
-
-    template<std::size_t... Is>
-    auto
-    get_components_for_entity(Entity entity, std::index_sequence<Is...>) const -> std::tuple<Components &...>
-    {
-        return std::tie(std::get<Is>(tables).get(entity)...);
-    }
-
-    template<std::size_t... Is>
-    bool entity_has_all_components(Entity entity, std::index_sequence<Is...>) const noexcept
-    {
-        return (std::get<Is>(tables).has(entity) && ...);
-    }
-
-public:
-    View(ComponentTable<Components> &...tables):
-        tables(tables...)
-    {
-    }
-
-    // Should be used as follows:
-    // auto view = world.getView<Component1, Component2, ...>();
-    // view.each([](Entity entity, Component1 &c1, Component2 &c2, ...) {
-    //     // do something with c1, c2, ...
-    // });
-    template<typename Func>
-    void each(Func func)
-    {
-        auto &first_table = std::get<0>(tables);
-        for (auto [entity, _] : first_table) {
-            if (entity_has_all_components(entity, std::index_sequence_for<Components...> {})) {
-                auto components =
-                    get_components_for_entity(entity, std::index_sequence_for<Components...> {});
-                std::apply(
-                    [&](auto &...comps) {
-                        func(entity, comps...);
-                    },
-                    components
-                );
-            }
-        }
-    }
-};
 
 // table for a specific component with the entity id as the key and the component as the value
 
@@ -106,7 +57,7 @@ public:
 
     size_t getEntityCount() const { return entityManager.getEntities().size(); }
 
-    template<class Component>
+    template<ComponentType Component>
     World &registerComponent()
     {
         const size_t hash = typeid(Component).hash_code();
@@ -117,13 +68,13 @@ public:
         return *this;
     }
 
-    template<typename... Components>
+    template<ComponentType... Components>
     void Entityadd(Entity entity, const Components &...components)
     {
         (EntityaddComponent(entity, components), ...);
     }
 
-    template<typename Component>
+    template<ComponentType Component>
     void EntityaddComponent(Entity entity, const Component &component)
     {
         const size_t hash = typeid(Component).hash_code();
@@ -136,14 +87,14 @@ public:
         }
     }
 
-    template<typename Component>
+    template<ComponentType Component>
     Component Entityget(Entity entity)
     {
         auto &table = getTable<Component>();
         return table.get(entity);
     }
 
-    template<typename Component>
+    template<ComponentType Component>
     void Entityremove(Entity entity)
     {
         auto it = tables.find(typeid(Component).hash_code());
@@ -153,7 +104,7 @@ public:
         it->second->remove(entity);
     }
 
-    template<typename Component>
+    template<ComponentType Component>
     ComponentTable<Component> &getTable()
     {
         auto it = tables.find(typeid(Component).hash_code());
@@ -163,7 +114,7 @@ public:
         return *static_cast<ComponentTable<Component> *>(it->second.get());
     }
 
-    template<typename... Component>
+    template<ComponentType... Component>
     View<Component...> getView()
     {
         return View<Component...>(getTable<Component>()...);
